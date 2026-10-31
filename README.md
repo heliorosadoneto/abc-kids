@@ -1,17 +1,17 @@
 <p align="center">
-  <img src="docs/screenshots/logo.png" width="160" alt="Letrinhas">
+  <img src="docs/screenshots/logo.png" width="160" alt="abc-kids">
 </p>
 
-<h1 align="center">Letrinhas · ABC Kids</h1>
+<h1 align="center">abc-kids</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-3-02569B?logo=flutter" alt="Flutter">
   <img src="https://img.shields.io/badge/Android-arm64-3DDC84?logo=android&logoColor=white" alt="Android">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-1.0.2-ff7ea8" alt="versão">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-1.0.3-ff7ea8" alt="versão">
   <img src="https://img.shields.io/badge/sem%20an%C3%BAncios-sem%20internet-9775fa" alt="sem anúncios">
 </p>
 
-<p align="center"><b>Um jogo de alfabeto para bebês: letras fofas com olhinhos passeiam, fogem, pulam e explodem em confetes.</b></p>
+<p align="center"><b>Um jogo de alfabeto para bebês: letras fofas com olhinhos passeiam, fogem do dedo, pulam, mudam de cor e explodem em confetes.</b></p>
 
 ---
 
@@ -27,11 +27,11 @@
 
 1. A letra **A** entra andando, piscando e olhando em volta.
 2. **Tocou fora da letra?** Ela leva um susto, arregala os olhos e sai correndo para longe do dedo, depois se acalma e volta a passear.
-3. **Tocou na letra?** Ela se espreme, faz *boing* e pula para outro canto da tela. Uma estrelinha embaixo dela acende.
-4. No **3º toque** certeiro (3 estrelas), a letra **explode em confetes** com um *pop*.
+3. **Tocou na letra?** Ela se espreme, faz *boing*, **muda de cor** com um brilho e pula para outro canto da tela.
+4. No **3º toque** certeiro (na terceira cor), a letra **explode em confetes** com um *pop*.
 5. Entra a **B**, depois a C… até o Z, e recomeça.
 
-Tela cheia, tela sempre ligada, área de toque generosa, um dedo de cada vez (multitoque é ignorado), botão voltar desativado. **Sem anúncios e sem internet.**
+Tela cheia, tela sempre ligada, toque vale só em cima da letra, um dedo de cada vez (multitoque é ignorado), botão voltar desativado. **Sem anúncios e sem internet.**
 
 | Fugindo do dedo | Pulando depois do toque |
 |:---:|:---:|
@@ -47,7 +47,7 @@ Tela cheia, tela sempre ligada, área de toque generosa, um dedo de cada vez (mu
 ## 🎵 Música e sons
 
 - Música de fundo suave (caixinha de música), em loop, bem baixinha (15%).
-- Efeitos sintetizados: *pop* na explosão, *boing* no pulo e um sopro quando a letra foge. A música abaixa um instante em cada efeito.
+- Efeitos sintetizados: *pop* na explosão, *boing* no pulo e um sopro quando a letra foge. Os efeitos tocam por cima da música, sem pausá-la.
 - A música pausa quando o app vai para segundo plano.
 - Todos os áudios ficam dentro do app e são carregados no início, sem atrasos.
 
@@ -56,13 +56,13 @@ Tela cheia, tela sempre ligada, área de toque generosa, um dedo de cada vez (mu
 Para o bebê não sair do jogo:
 
 1. **Configurações → Segurança → Mais configurações de segurança → Fixar app** (ou busque "Fixar") e ative. Recomendado: "Pedir PIN antes de liberar".
-2. Abra o Letrinhas e vá para **apps recentes** (botão quadrado, ou deslize de baixo para cima e segure).
+2. Abra o abc-kids e vá para **apps recentes** (botão quadrado, ou deslize de baixo para cima e segure).
 3. Toque no **ícone do app** em cima da janela → **Fixar**.
 4. Para soltar: segure **Voltar + Visão geral** juntos (com gestos: deslize para cima e segure) e digite o PIN.
 
 ## 📲 Instalar
 
-1. Copie `Letrinhas.apk` para o celular (Android 5.0+, arm64).
+1. Copie o APK do abc-kids para o celular (Android 5.0+, arm64).
 2. Abra o arquivo e autorize "instalar apps desconhecidos" se o Android pedir.
 
 ## 🛠️ Compilar

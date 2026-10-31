@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:letrinhas/game/game_screen.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:letrinhas/game/scene.dart';
+import 'package:letrinhas/game/sound.dart';
 import 'package:letrinhas/parent_gate.dart';
 import 'package:letrinhas/theme/design_system.dart';
 
@@ -82,6 +84,35 @@ void main() {
     expect(events, ['pop', 'next']);
     expect(l.s.info.letter, 'B');
     expect(l.s.hits, 0);
+  });
+
+  test('toque abaixo da letra (onde ficavam as estrelas) é erro', () {
+    final l = makeLogic();
+    settle(l);
+    expect(l.tap(l.s.pos + Offset(0, l.letterSize * 0.62)), 'miss');
+  });
+
+  test('acertos mudam a cor da letra', () {
+    final l = makeLogic();
+    settle(l);
+    final c0 = l.s.color;
+    l.tap(l.s.pos);
+    settle(l, 70);
+    final c1 = l.s.color;
+    l.tap(l.s.pos);
+    settle(l, 70);
+    final c2 = l.s.color;
+    expect({c0, c1, c2}.length, 3);
+  });
+
+  test('música volta se parar com o app aberto', () {
+    for (final st in [PlayerState.paused, PlayerState.stopped, PlayerState.completed]) {
+      expect(shouldResumeMusic(state: st, musicOn: true, foreground: true), isTrue);
+    }
+    expect(shouldResumeMusic(state: PlayerState.playing, musicOn: true, foreground: true), isFalse);
+    expect(shouldResumeMusic(state: PlayerState.paused, musicOn: false, foreground: true), isFalse);
+    expect(shouldResumeMusic(state: PlayerState.paused, musicOn: true, foreground: false), isFalse);
+    expect(mixContext.android.audioFocus, AndroidAudioFocus.none);
   });
 
   testWidgets('shot 1: A andando', (t) async {

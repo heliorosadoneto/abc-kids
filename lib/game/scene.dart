@@ -29,7 +29,6 @@ class SceneState {
   double blink = 0; // 0 aberto, 1 fechado
   Offset enterFrom = Offset.zero;
   List<Particle> particles = [];
-  bool showHits = true;
   int hits = 0; // toques certeiros nesta letra (3 = explode)
   Offset hopFrom = Offset.zero, hopTo = Offset.zero;
 
@@ -38,7 +37,16 @@ class SceneState {
   Offset explodeAt = Offset.zero;
 
   LetterInfo get info => letters[index % letters.length];
-  Color get color => DS.letterColor(index);
+  double colorT = 0; // tempo desde a última troca de cor
+  Color get color {
+    final target = DS.hitColor(index, hits.clamp(0, 2));
+    if (hits == 0 || colorT >= DS.colorFade) return target;
+    final prev = DS.hitColor(index, hits - 1);
+    return Color.lerp(prev, target, DS.gentle.transform(colorT / DS.colorFade))!;
+  }
+
+  /// Brilho branco logo após um acerto (0..1).
+  double get flash => hits == 0 ? 0 : (1 - colorT / DS.flashTime).clamp(0.0, 1.0);
 }
 
 /// Pinta o céu com nuvens e bolhas flutuantes.
@@ -171,36 +179,15 @@ class LetterPainter extends CustomPainter {
     canvas.clipRect(Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height * 0.42));
     tp(Paint()..color = DS.white.withValues(alpha: 0.35)).paint(canvas, o + const Offset(-2, -3));
     canvas.restore();
+    if (s.flash > 0) {
+      tp(Paint()..color = DS.white.withValues(alpha: 0.8 * s.flash)).paint(canvas, o);
+    }
 
     // No "B" os olhos ficam menores e no topo, sem tapar os buracos.
     final isB = s.info.letter == 'B';
-    canvas.save();
-    canvas.scale(1 / sx, 1 / sy);
-    _drawHits(canvas);
-    canvas.restore();
     _drawEyes(canvas, isB ? Offset(-letterSize * 0.04, -letterSize * 0.27) : Offset(0, -letterSize * 0.05),
         ratio: isB ? DS.eyeRatio * 0.68 : DS.eyeRatio);
     canvas.restore();
-  }
-
-  /// 3 estrelinhas sob a letra mostrando os toques certeiros.
-  void _drawHits(Canvas canvas) {
-    if (!s.showHits) return;
-    final r = letterSize * 0.055;
-    for (var i = 0; i < 3; i++) {
-      final c = Offset((i - 1) * r * 2.8, letterSize * 0.62);
-      final on = i < s.hits;
-      canvas.save();
-      canvas.translate(c.dx, c.dy);
-      canvas.drawPath(_star(r), Paint()..color = on ? DS.hitOn : DS.hitOff);
-      canvas.drawPath(
-          _star(r),
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5
-            ..color = on ? DS.dark(DS.hitOn) : DS.white.withValues(alpha: 0.8));
-      canvas.restore();
-    }
   }
 
   void _drawEyes(Canvas canvas, Offset center, {double ratio = DS.eyeRatio}) {
@@ -310,8 +297,9 @@ class SceneLogic {
   /// 'hit' (3º acerto, vai explodir), 'miss' (errou, letra foge) ou null.
   String? tap(Offset p) {
     if (s.phase == Phase.squish || s.phase == Phase.exploding || s.phase == Phase.hopping) return null;
-    if ((p - s.pos).distance <= letterSize * DS.hitRadius) {
+    if (hitBox().contains(p)) {
       s.hits++;
+      s.colorT = 0;
       s.phase = Phase.squish;
       s.phaseT = 0;
       return s.hits >= 3 ? 'hit' : 'boing';
@@ -325,6 +313,18 @@ class SceneLogic {
     _lookTarget = -d / d.distance;
     s.look = _lookTarget;
     return 'miss';
+  }
+
+  /// Caixa da letra na tela (glifo × DS.hitScale), usada no toque.
+  Rect hitBox() {
+    final tp = TextPainter(
+      text: TextSpan(text: s.info.letter, style: DS.display(letterSize)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    // o glifo ocupa ~72% da altura da linha da fonte
+    final w = tp.width * DS.hitScale;
+    final h = tp.height * 0.72 * DS.hitScale;
+    return Rect.fromCenter(center: s.pos + Offset(0, tp.height * 0.04), width: w, height: h);
   }
 
   /// Escolhe um ponto longe da posição atual, dentro da tela.
@@ -376,6 +376,7 @@ class SceneLogic {
   /// Avança. Retorna evento: 'pop' quando explode, 'next' quando nova letra entra.
   String? step(double dt) {
     s.time += dt;
+    s.colorT += dt;
     s.phaseT += dt;
     String? ev;
     // olhar e piscar

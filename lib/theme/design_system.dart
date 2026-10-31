@@ -2,7 +2,7 @@
 import 'package:flutter/animation.dart';
 import 'package:flutter/painting.dart';
 
-/// Sistema de design central do Letrinhas.
+/// Sistema de design central do abc-kids.
 class DS {
   DS._();
 
@@ -49,6 +49,9 @@ class DS {
 
   static Color letterColor(int i) => letterColors[i % letterColors.length];
 
+  /// Cor da letra conforme os acertos: 0 = cor própria, 1 e 2 = cores seguintes bem diferentes.
+  static Color hitColor(int letter, int hits) => letterColor(letter + hits * 9);
+
   /// Versão clara (brilho) e escura (sombra/contorno) da cor da letra.
   static Color light(Color c) => Color.lerp(c, white, 0.55)!;
   static Color dark(Color c) =>
@@ -69,11 +72,10 @@ class DS {
   static const fleeTime = 0.9; // s: corrida de susto
   static const fleeSpeed = 1100.0; // px/s no início da fuga
   static const walkSpeed = 60.0; // px/s passeando
-  static const hitRadius = 1.2; // área de toque em relação ao tamanho da letra
-  static const hitOn = Color(0xFFFFC94D);
-  static const hitOff = Color(0x55FFFFFF);
+  static const hitScale = 1.05; // área de toque = caixa da letra × 1,05
+  static const colorFade = 0.35; // s: troca de cor após um acerto
+  static const flashTime = 0.25; // s: brilho branco após um acerto
   static const musicVolume = 0.15;
-  static const musicDucked = 0.04;
   static const explodeDuration = Duration(milliseconds: 1100);
   static const enterDuration = Duration(milliseconds: 1400);
   static const blinkDuration = Duration(milliseconds: 140);

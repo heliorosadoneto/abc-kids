@@ -16,7 +16,7 @@ class LetrinhasApp extends StatelessWidget {
   const LetrinhasApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Letrinhas',
+        title: 'abc-kids',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(fontFamily: DS.fontFamily, colorSchemeSeed: DS.accent),
         home: const GameScreen(),
