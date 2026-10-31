@@ -11,7 +11,8 @@ class LetrinhasLogo extends StatelessWidget {
 
   SceneState _st(int i, Offset pos, Offset look) => SceneState()
     ..index = i
-    ..phase = Phase.squish
+    ..phase = Phase.walking
+    ..showHits = false
     ..phaseT = 0
     ..pos = pos
     ..look = look;

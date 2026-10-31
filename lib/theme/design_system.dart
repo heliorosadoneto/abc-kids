@@ -63,8 +63,15 @@ class DS {
   static const springIn = Curves.elasticOut;
   static const squish = Curves.easeOutBack;
   static const gentle = Curves.easeInOutSine;
-  static const squishDuration = Duration(milliseconds: 1100); // tempo para falar a letra
-  static const explodeHold = 2.6; // s: confete + emoji + palavra
+  static const explodeHold = 1.6; // s: confete antes da próxima letra
+  static const squishTime = 0.22; // s: espremida ao ser tocada
+  static const hopTime = 0.75; // s: pulo para longe
+  static const fleeTime = 0.9; // s: corrida de susto
+  static const fleeSpeed = 1100.0; // px/s no início da fuga
+  static const walkSpeed = 60.0; // px/s passeando
+  static const hitRadius = 1.2; // área de toque em relação ao tamanho da letra
+  static const hitOn = Color(0xFFFFC94D);
+  static const hitOff = Color(0x55FFFFFF);
   static const musicVolume = 0.15;
   static const musicDucked = 0.04;
   static const explodeDuration = Duration(milliseconds: 1100);

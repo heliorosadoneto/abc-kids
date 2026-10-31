@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../theme/design_system.dart';
 import 'words.dart';
 
-enum Phase { entering, walking, squish, exploding }
+enum Phase { entering, walking, fleeing, hopping, squish, exploding }
 
 class Particle {
   Particle(this.pos, this.vel, this.color, this.shape, this.size, this.spin);
@@ -29,6 +29,12 @@ class SceneState {
   double blink = 0; // 0 aberto, 1 fechado
   Offset enterFrom = Offset.zero;
   List<Particle> particles = [];
+  bool showHits = true;
+  int hits = 0; // toques certeiros nesta letra (3 = explode)
+  Offset hopFrom = Offset.zero, hopTo = Offset.zero;
+
+  /// Olhos arregalados (susto).
+  bool get scared => phase == Phase.fleeing || phase == Phase.hopping || phase == Phase.squish;
   Offset explodeAt = Offset.zero;
 
   LetterInfo get info => letters[index % letters.length];
@@ -83,17 +89,6 @@ class LetterPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (s.phase != Phase.exploding || s.phaseT < 0.12) _drawLetter(canvas);
     _drawParticles(canvas);
-    if (s.phase == Phase.exploding) _drawEmoji(canvas, size);
-  }
-
-  void _drawEmoji(Canvas canvas, Size size) {
-    final t = (s.phaseT / 1.0).clamp(0.0, 1.0);
-    final scale = DS.springIn.transform(t);
-    final tp = TextPainter(
-      text: TextSpan(text: letters[s.index % letters.length].emoji, style: TextStyle(fontSize: letterSize * 0.85 * scale, fontFamilyFallback: const ['NotoColorEmoji'])),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, s.explodeAt - Offset(tp.width / 2, tp.height / 2 + letterSize * 0.1));
   }
 
   void _drawLetter(Canvas canvas) {
@@ -101,6 +96,18 @@ class LetterPainter extends CustomPainter {
     // Squish / wobble
     double sx = 1, sy = 1, rot = 0, hop = 0;
     switch (s.phase) {
+      case Phase.fleeing:
+        final w = s.time * 22; // corridinha rápida
+        rot = sin(w) * 0.14;
+        hop = -sin(w).abs() * letterSize * 0.08;
+        sx = 0.92;
+        sy = 1.08;
+      case Phase.hopping:
+        // pulo em arco: estica no ar, achata ao pousar
+        final t = (s.phaseT / DS.hopTime).clamp(0.0, 1.0);
+        rot = sin(t * pi * 2) * 0.35;
+        sx = 1 - sin(t * pi) * 0.12;
+        sy = 1 + sin(t * pi) * 0.15;
       case Phase.walking:
       case Phase.entering:
         final w = s.time * 7;
@@ -110,7 +117,7 @@ class LetterPainter extends CustomPainter {
         sx = 1 + sin(w).abs() * 0.03;
       case Phase.squish:
         // espreme e pulsa enquanto a letra é falada
-        final q = sin((s.phaseT / 0.32).clamp(0.0, 1.0) * pi) + 0.25 * sin(s.phaseT * 14).abs();
+        final q = sin((s.phaseT / DS.squishTime).clamp(0.0, 1.0) * pi);
         sx = 1 + q * 0.28;
         sy = 1 - q * 0.25;
       case Phase.exploding:
@@ -167,13 +174,37 @@ class LetterPainter extends CustomPainter {
 
     // No "B" os olhos ficam menores e no topo, sem tapar os buracos.
     final isB = s.info.letter == 'B';
+    canvas.save();
+    canvas.scale(1 / sx, 1 / sy);
+    _drawHits(canvas);
+    canvas.restore();
     _drawEyes(canvas, isB ? Offset(-letterSize * 0.04, -letterSize * 0.27) : Offset(0, -letterSize * 0.05),
         ratio: isB ? DS.eyeRatio * 0.68 : DS.eyeRatio);
     canvas.restore();
   }
 
+  /// 3 estrelinhas sob a letra mostrando os toques certeiros.
+  void _drawHits(Canvas canvas) {
+    if (!s.showHits) return;
+    final r = letterSize * 0.055;
+    for (var i = 0; i < 3; i++) {
+      final c = Offset((i - 1) * r * 2.8, letterSize * 0.62);
+      final on = i < s.hits;
+      canvas.save();
+      canvas.translate(c.dx, c.dy);
+      canvas.drawPath(_star(r), Paint()..color = on ? DS.hitOn : DS.hitOff);
+      canvas.drawPath(
+          _star(r),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5
+            ..color = on ? DS.dark(DS.hitOn) : DS.white.withValues(alpha: 0.8));
+      canvas.restore();
+    }
+  }
+
   void _drawEyes(Canvas canvas, Offset center, {double ratio = DS.eyeRatio}) {
-    final r = letterSize * ratio;
+    final r = letterSize * ratio * (s.scared ? 1.22 : 1);
     for (final dx in [-r * 1.15, r * 1.15]) {
       final c = center + Offset(dx, 0);
       canvas.drawCircle(c + const Offset(0, 3), r, Paint()..color = DS.softShadowColor);
@@ -186,9 +217,9 @@ class LetterPainter extends CustomPainter {
             ..strokeWidth = r * 0.16
             ..color = DS.eyeOutline);
       final p = c + s.look * r * 0.7;
-      canvas.drawCircle(p, r * 0.48, Paint()..color = DS.pupil);
+      canvas.drawCircle(p, r * (s.scared ? 0.3 : 0.48), Paint()..color = DS.pupil);
       canvas.drawCircle(p + Offset(-r * 0.17, -r * 0.17), r * 0.16, Paint()..color = DS.eyeShine);
-      if (s.blink > 0) {
+      if (s.blink > 0 && !s.scared) {
         canvas.save();
         canvas.clipPath(Path()..addOval(Rect.fromCircle(center: c, radius: r)));
         canvas.drawRect(
@@ -261,6 +292,7 @@ class SceneLogic {
     s.phase = Phase.entering;
     s.phaseT = 0;
     s.particles = [];
+    s.hits = 0;
     final half = letterSize * 0.6;
     final side = s.index % 4;
     s.enterFrom = switch (side) {
@@ -271,16 +303,44 @@ class SceneLogic {
     };
     s.pos = s.enterFrom;
     final a = rnd.nextDouble() * pi * 2;
-    s.vel = Offset(cos(a), sin(a)) * 60;
+    s.vel = Offset(cos(a), sin(a)) * DS.walkSpeed;
   }
 
-  /// Retorna true se o toque acertou a letra.
-  bool tap(Offset p) {
-    if (s.phase != Phase.walking && s.phase != Phase.entering) return false;
-    if ((p - s.pos).distance > letterSize * 1.35) return false;
-    s.phase = Phase.squish;
+  /// Trata um toque. Retorna 'boing' (acertou 1ª/2ª vez, letra pula),
+  /// 'hit' (3º acerto, vai explodir), 'miss' (errou, letra foge) ou null.
+  String? tap(Offset p) {
+    if (s.phase == Phase.squish || s.phase == Phase.exploding || s.phase == Phase.hopping) return null;
+    if ((p - s.pos).distance <= letterSize * DS.hitRadius) {
+      s.hits++;
+      s.phase = Phase.squish;
+      s.phaseT = 0;
+      return s.hits >= 3 ? 'hit' : 'boing';
+    }
+    // errou: foge para o lado oposto do dedo
+    var d = s.pos - p;
+    if (d.distance < 1) d = const Offset(1, 0);
+    s.vel = d / d.distance * DS.fleeSpeed;
+    s.phase = Phase.fleeing;
     s.phaseT = 0;
-    return true;
+    _lookTarget = -d / d.distance;
+    s.look = _lookTarget;
+    return 'miss';
+  }
+
+  /// Escolhe um ponto longe da posição atual, dentro da tela.
+  Offset farPoint() {
+    final m = letterSize * 0.6;
+    var best = s.pos;
+    var bestD = -1.0;
+    for (var i = 0; i < 12; i++) {
+      final c = Offset(m + rnd.nextDouble() * max(1, area.width - 2 * m), m + rnd.nextDouble() * max(1, area.height - 2 * m));
+      final d = (c - s.pos).distance;
+      if (d > bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    return best;
   }
 
   void explode() {
@@ -299,6 +359,18 @@ class SceneLogic {
         (rnd.nextDouble() - 0.5) * 10,
       );
     });
+  }
+
+  void _bounce() {
+    final m = letterSize * 0.5;
+    if (s.pos.dx < m || s.pos.dx > area.width - m) {
+      s.vel = Offset(-s.vel.dx, s.vel.dy);
+      s.pos = Offset(s.pos.dx.clamp(m, max(m, area.width - m)), s.pos.dy);
+    }
+    if (s.pos.dy < m || s.pos.dy > area.height - m) {
+      s.vel = Offset(s.vel.dx, -s.vel.dy);
+      s.pos = Offset(s.pos.dx, s.pos.dy.clamp(m, max(m, area.height - m)));
+    }
   }
 
   /// Avança. Retorna evento: 'pop' quando explode, 'next' quando nova letra entra.
@@ -333,19 +405,40 @@ class SceneLogic {
         }
       case Phase.walking:
         s.pos += s.vel * dt;
-        final m = letterSize * 0.5;
-        if (s.pos.dx < m || s.pos.dx > area.width - m) {
-          s.vel = Offset(-s.vel.dx, s.vel.dy);
-          s.pos = Offset(s.pos.dx.clamp(m, area.width - m), s.pos.dy);
+        _bounce();
+      case Phase.fleeing:
+        s.pos += s.vel * dt;
+        _bounce();
+        // desacelera e se acalma
+        s.vel = s.vel * pow(0.25, dt).toDouble();
+        if (s.phaseT >= DS.fleeTime) {
+          s.vel = s.vel / max(1, s.vel.distance) * DS.walkSpeed;
+          s.phase = Phase.walking;
+          s.phaseT = 0;
         }
-        if (s.pos.dy < m || s.pos.dy > area.height - m) {
-          s.vel = Offset(s.vel.dx, -s.vel.dy);
-          s.pos = Offset(s.pos.dx, s.pos.dy.clamp(m, area.height - m));
+      case Phase.hopping:
+        final t = (s.phaseT / DS.hopTime).clamp(0.0, 1.0);
+        final e = DS.gentle.transform(t);
+        // altura do pulo limitada para a letra não sair pelo topo da tela
+        final maxArc = max(0.0, min(s.hopFrom.dy, s.hopTo.dy) - letterSize * 0.55);
+        final arc = sin(t * pi) * min(maxArc, min(area.height * 0.35, (s.hopTo - s.hopFrom).distance * 0.5));
+        s.pos = Offset.lerp(s.hopFrom, s.hopTo, e)! - Offset(0, arc);
+        if (t >= 1) {
+          s.pos = s.hopTo;
+          s.phase = Phase.walking;
+          s.phaseT = 0;
         }
       case Phase.squish:
-        if (s.phaseT >= DS.squishDuration.inMilliseconds / 1000) {
-          explode();
-          ev = 'pop';
+        if (s.phaseT >= DS.squishTime) {
+          if (s.hits >= 3) {
+            explode();
+            ev = 'pop';
+          } else {
+            s.hopFrom = s.pos;
+            s.hopTo = farPoint();
+            s.phase = Phase.hopping;
+            s.phaseT = 0;
+          }
         }
       case Phase.exploding:
         for (final p in s.particles) {

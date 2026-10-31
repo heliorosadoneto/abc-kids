@@ -42,43 +42,63 @@ Future<void> pumpScene(WidgetTester t, SceneLogic l) async {
 void main() {
   setUpAll(loadFonts);
 
-  test('lógica: toque acerta, explode e entra a próxima letra', () {
-    final l = makeLogic();
-    for (var i = 0; i < 100; i++) {
+  void settle(SceneLogic l, [int frames = 100]) {
+    for (var i = 0; i < frames; i++) {
       l.step(1 / 60);
     }
+  }
+
+  test('lógica: erro foge, 2 acertos pulam, 3º explode e entra a próxima', () {
+    final l = makeLogic();
+    settle(l);
     expect(l.s.phase, Phase.walking);
-    expect(l.tap(l.s.pos + const Offset(2000, 0)), isFalse);
-    expect(l.tap(l.s.pos + Offset(l.letterSize * 0.6, 0)), isTrue);
-    String? ev;
+    // erro: foge para longe do dedo e continua na tela
+    final before = l.s.pos;
+    final finger = before + Offset(l.letterSize * 1.5, 0);
+    expect(l.tap(finger), 'miss');
+    expect(l.s.phase, Phase.fleeing);
+    settle(l, 20);
+    expect((l.s.pos - finger).distance, greaterThan((before - finger).distance));
+    settle(l, 80);
+    expect(l.s.phase, Phase.walking);
+    expect(l.s.pos.dx, inInclusiveRange(0, size.width));
+    expect(l.s.pos.dy, inInclusiveRange(0, size.height));
+    // 1º e 2º acerto: pula para longe
+    for (var hit = 1; hit <= 2; hit++) {
+      final p0 = l.s.pos;
+      expect(l.tap(l.s.pos), 'boing');
+      settle(l, 70);
+      expect(l.s.phase, Phase.walking);
+      expect(l.s.hits, hit);
+      expect((l.s.pos - p0).distance, greaterThan(l.letterSize));
+    }
+    // 3º acerto: explode
+    expect(l.tap(l.s.pos), 'hit');
     final events = <String>[];
-    for (var i = 0; i < 300; i++) {
-      ev = l.step(1 / 60);
+    for (var i = 0; i < 200; i++) {
+      final ev = l.step(1 / 60);
       if (ev != null) events.add(ev);
     }
     expect(events, ['pop', 'next']);
     expect(l.s.info.letter, 'B');
+    expect(l.s.hits, 0);
   });
 
   testWidgets('shot 1: A andando', (t) async {
     final l = makeLogic();
-    for (var i = 0; i < 150; i++) {
-      l.step(1 / 60);
-    }
+    settle(l, 150);
     l.s.look = const Offset(0.7, -0.4);
+    l.s.hits = 1;
     await pumpScene(t, l);
     await expectLater(find.byType(GameScreen), matchesGoldenFile('../shots/01_letra_A_andando.png'));
   });
 
   testWidgets('shot 2: explosão', (t) async {
     final l = makeLogic();
-    for (var i = 0; i < 120; i++) {
-      l.step(1 / 60);
-    }
+    settle(l, 120);
+    l.s.hits = 2;
     l.tap(l.s.pos);
-    for (var i = 0; i < 66 + 22; i++) {
-      l.step(1 / 60);
-    }
+    settle(l, 14 + 20);
     await pumpScene(t, l);
     await expectLater(find.byType(GameScreen), matchesGoldenFile('../shots/02_explosao_confete.png'));
   });
@@ -87,12 +107,28 @@ void main() {
     final l = makeLogic();
     l.s.index = 1;
     l.startEnter();
-    for (var i = 0; i < 30; i++) {
-      l.step(1 / 60);
-    }
+    settle(l, 30);
     l.s.look = const Offset(-0.8, 0);
     await pumpScene(t, l);
     await expectLater(find.byType(GameScreen), matchesGoldenFile('../shots/03_letra_B_entrando.png'));
+  });
+
+  testWidgets('shot 5: A fugindo assustada', (t) async {
+    final l = makeLogic();
+    settle(l, 120);
+    l.tap(l.s.pos + Offset(l.letterSize * 1.4, l.letterSize * 0.3));
+    settle(l, 10);
+    await pumpScene(t, l);
+    await expectLater(find.byType(GameScreen), matchesGoldenFile('../shots/05_letra_fugindo.png'));
+  });
+
+  testWidgets('shot 6: A pulando', (t) async {
+    final l = makeLogic();
+    settle(l, 120);
+    l.tap(l.s.pos);
+    settle(l, 14 + 20);
+    await pumpScene(t, l);
+    await expectLater(find.byType(GameScreen), matchesGoldenFile('../shots/06_letra_pulando.png'));
   });
 
   testWidgets('shot 4: porta dos pais', (t) async {

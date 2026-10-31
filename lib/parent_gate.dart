@@ -151,7 +151,7 @@ class _ParentMenuState extends State<ParentMenu> {
       ),
       const SizedBox(height: 12),
       _BigButton(
-        label: sound ? 'Som/vozes: ligado' : 'Som/vozes: desligado',
+        label: sound ? 'Efeitos: ligados' : 'Efeitos: desligados',
         color: DS.letterColor(7),
         wide: true,
         onTap: () {

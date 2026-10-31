@@ -7,17 +7,17 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-3-02569B?logo=flutter" alt="Flutter">
   <img src="https://img.shields.io/badge/Android-arm64-3DDC84?logo=android&logoColor=white" alt="Android">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-1.0.1-ff7ea8" alt="versão">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-1.0.2-ff7ea8" alt="versão">
   <img src="https://img.shields.io/badge/sem%20an%C3%BAncios-sem%20internet-9775fa" alt="sem anúncios">
 </p>
 
-<p align="center"><b>Um jogo de alfabeto para bebês: letras fofas com olhinhos passeiam pela tela, falam o próprio nome e explodem em confetes.</b></p>
+<p align="center"><b>Um jogo de alfabeto para bebês: letras fofas com olhinhos passeiam, fogem, pulam e explodem em confetes.</b></p>
 
 ---
 
 ## 📸 Telas
 
-| Letra passeando | Explosão + desenho |
+| Letra passeando | 3º toque: explosão |
 |:---:|:---:|
 | <img src="docs/screenshots/01_letra_A_andando.png" width="400"> | <img src="docs/screenshots/02_explosao_confete.png" width="400"> |
 | **Próxima letra entrando** | **Área dos pais** |
@@ -26,24 +26,28 @@
 ## 🎈 Como jogar
 
 1. A letra **A** entra andando, piscando e olhando em volta.
-2. O bebê toca na letra (vale tocar perto, a área é bem grande).
-3. A letra se espreme e fala o nome devagar: **"Á."**
-4. Ela explode em confetes, aparece o desenho 🐝 e a voz diz **"Abelha!"**.
+2. **Tocou fora da letra?** Ela leva um susto, arregala os olhos e sai correndo para longe do dedo, depois se acalma e volta a passear.
+3. **Tocou na letra?** Ela se espreme, faz *boing* e pula para outro canto da tela. Uma estrelinha embaixo dela acende.
+4. No **3º toque** certeiro (3 estrelas), a letra **explode em confetes** com um *pop*.
 5. Entra a **B**, depois a C… até o Z, e recomeça.
 
-Tela cheia, tela sempre ligada, um dedo de cada vez (multitoque é ignorado), botão voltar desativado. **Sem anúncios e sem internet.**
+Tela cheia, tela sempre ligada, área de toque generosa, um dedo de cada vez (multitoque é ignorado), botão voltar desativado. **Sem anúncios e sem internet.**
+
+| Fugindo do dedo | Pulando depois do toque |
+|:---:|:---:|
+| <img src="docs/screenshots/05_letra_fugindo.png" width="400"> | <img src="docs/screenshots/06_letra_pulando.png" width="400"> |
 
 ## 🔒 Área dos pais
 
 - Cadeado discreto no canto superior direito.
 - **Segure 1,5 segundo** (o anel enche). Toques curtos não fazem nada.
 - Responda uma **soma simples** (muda a cada vez).
-- Menu: **Continuar**, **Música** liga/desliga, **Som/vozes** liga/desliga, **Sair**.
+- Menu: **Continuar**, **Música** liga/desliga, **Efeitos** (pop, boing) liga/desliga, **Sair**.
 
 ## 🎵 Música e sons
 
 - Música de fundo suave (caixinha de música), em loop, bem baixinha (15%).
-- Quando uma voz fala, a música abaixa para 4% e volta devagar depois.
+- Efeitos sintetizados: *pop* na explosão, *boing* no pulo e um sopro quando a letra foge. A música abaixa um instante em cada efeito.
 - A música pausa quando o app vai para segundo plano.
 - Todos os áudios ficam dentro do app e são carregados no início, sem atrasos.
 
@@ -71,15 +75,13 @@ flutter build apk --release --split-per-abi --target-platform android-arm64
 
 - Design system: `lib/theme/design_system.dart` (cores por letra, céu, sombras, curvas, partículas, olhos).
 - Telas e logo: `flutter test --update-goldens` (gera `shots/`; copie para `docs/screenshots/`).
-- Vozes: `./gen_audio.sh` (precisa do Piper e da voz `pt_BR-cadu-medium`; textos em `words.txt`).
+- Efeitos: `./gen_audio.sh` (ffmpeg).
 - Música: `python3 gen_music.py` e depois ffmpeg para `assets/audio/musica.ogg`.
 
 ## 📜 Créditos e licenças
 
 - **Fonte Fredoka**: SIL Open Font License 1.1.
-- **Vozes**: geradas offline com [Piper TTS](https://github.com/rhasspy/piper) (MIT), voz `pt_BR-cadu-medium`. O dataset da voz é **CC0**. O modelo foi refinado a partir da voz inglesa *lessac*, cujo dataset tem termos próprios. Para uso comercial, confira a licença no [model card](https://huggingface.co/rhasspy/piper-voices/tree/main/pt/pt_BR/cadu/medium).
 - **Música e efeitos**: 100% sintetizados por código (`gen_music.py` e ffmpeg), sem samples de terceiros.
 - **Letras, olhos, confetes, cenário e logo**: desenhados em código (CustomPainter).
-- **Desenhos das palavras**: emojis do próprio sistema Android.
 
 © Hélio Rosado Neto. Todos os direitos reservados.

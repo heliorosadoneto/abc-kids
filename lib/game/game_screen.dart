@@ -7,7 +7,6 @@ import '../parent_gate.dart';
 import '../theme/design_system.dart';
 import 'scene.dart';
 import 'sound.dart';
-import 'words.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key, this.logic, this.animate = true, this.audio = true});
@@ -32,7 +31,7 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     if (widget.audio) {
-      sound = GameSound()..init([for (final l in letters) l.letter]);
+      sound = GameSound()..init();
     }
     if (widget.animate) {
       _ticker = createTicker(_tick)..start();
@@ -44,13 +43,18 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _last = d;
     if (paused) return;
     final ev = logic.step(dt);
-    if (ev == 'pop') sound?.explode(logic.s.info.letter);
+    if (ev == 'pop') sound?.pop();
     setState(() {});
   }
 
   void _onTap(TapDownDetails d) {
     if (paused) return;
-    if (logic.tap(d.localPosition)) sound?.letter(logic.s.info.letter);
+    switch (logic.tap(d.localPosition)) {
+      case 'boing':
+        sound?.boing();
+      case 'miss':
+        sound?.whoosh();
+    }
   }
 
   Future<void> _parentFlow() async {
@@ -63,8 +67,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           barrierDismissible: false,
           barrierColor: DS.overlay,
           builder: (_) => ParentMenu(
-                soundOn: sound?.soundOn ?? true,
-                onSound: (v) => sound?.soundOn = v,
+                soundOn: sound?.effectsOn ?? true,
+                onSound: (v) => sound?.effectsOn = v,
                 musicOn: sound?.musicOn ?? true,
                 onMusic: (v) => sound?.setMusic(v),
               ));

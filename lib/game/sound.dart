@@ -4,29 +4,29 @@ import 'package:audioplayers/audioplayers.dart';
 
 import '../theme/design_system.dart';
 
-/// Áudio do jogo: vozes, efeitos e música de fundo com "ducking".
+/// Áudio do jogo: efeitos (pop, boing, fuga) e música de fundo.
 class GameSound {
-  final _voice = AudioPlayer();
-  final _word = AudioPlayer();
-  final _fx = AudioPlayer();
   final _pop = AudioPlayer();
+  final _boing = AudioPlayer();
+  final _whoosh = AudioPlayer();
   final _music = AudioPlayer();
-  bool soundOn = true;
+  bool effectsOn = true;
   bool musicOn = true;
   bool _bg = false;
   Timer? _fade, _restore;
   double _vol = DS.musicVolume;
 
-  Future<void> init(List<String> letters) async {
+  List<AudioPlayer> get _all => [_pop, _boing, _whoosh, _music];
+
+  Future<void> init() async {
     final cache = AudioCache(prefix: 'assets/audio/');
-    await cache.loadAll([
-      'pop.mp3', 'efeito_A.mp3', 'musica.ogg',
-      for (final l in letters) ...['letra_$l.mp3', 'palavra_$l.mp3'],
-    ]);
-    for (final p in [_voice, _word, _fx, _pop, _music]) {
+    await cache.loadAll(['pop.mp3', 'boing.mp3', 'whoosh.mp3', 'musica.ogg']);
+    for (final p in _all) {
       p.audioCache = cache;
     }
-    await _pop.setPlayerMode(PlayerMode.lowLatency);
+    for (final p in [_pop, _boing, _whoosh]) {
+      await p.setPlayerMode(PlayerMode.lowLatency);
+    }
     await _music.setReleaseMode(ReleaseMode.loop);
     await _music.setVolume(_vol);
     if (musicOn) await _music.play(AssetSource('musica.ogg'), volume: _vol);
@@ -45,26 +45,22 @@ class GameSound {
     });
   }
 
-  void _duck(Duration hold) {
+  /// Abaixa a música um instante para o efeito aparecer.
+  void _duck() {
     _restore?.cancel();
-    _fadeTo(DS.musicDucked, const Duration(milliseconds: 180));
-    _restore = Timer(hold, () => _fadeTo(DS.musicVolume, const Duration(milliseconds: 900)));
+    _fadeTo(DS.musicDucked, const Duration(milliseconds: 120));
+    _restore = Timer(const Duration(milliseconds: 900), () => _fadeTo(DS.musicVolume, const Duration(milliseconds: 800)));
   }
 
-  void letter(String l) {
-    if (!soundOn) return;
-    _duck(const Duration(milliseconds: 4200));
-    _voice.play(AssetSource('letra_$l.mp3'));
+  void _play(AudioPlayer p, String f) {
+    if (!effectsOn) return;
+    _duck();
+    p.play(AssetSource(f));
   }
 
-  void explode(String l) {
-    if (!soundOn) return;
-    _pop.play(AssetSource('pop.mp3'));
-    Timer(const Duration(milliseconds: 350), () {
-      _word.play(AssetSource('palavra_$l.mp3'));
-      if (l == 'A') _fx.play(AssetSource('efeito_A.mp3'), volume: 0.5);
-    });
-  }
+  void pop() => _play(_pop, 'pop.mp3');
+  void boing() => _play(_boing, 'boing.mp3');
+  void whoosh() => _play(_whoosh, 'whoosh.mp3');
 
   Future<void> setMusic(bool on) async {
     musicOn = on;
@@ -79,8 +75,6 @@ class GameSound {
     _bg = bg;
     if (bg) {
       _music.pause();
-      _voice.stop();
-      _word.stop();
     } else if (musicOn) {
       _music.resume();
     }
@@ -89,7 +83,7 @@ class GameSound {
   void dispose() {
     _fade?.cancel();
     _restore?.cancel();
-    for (final p in [_voice, _word, _fx, _pop, _music]) {
+    for (final p in _all) {
       p.dispose();
     }
   }
